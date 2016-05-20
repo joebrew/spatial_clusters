@@ -1,0 +1,255 @@
+---
+params:
+  example_param: 1
+  creation_date: !r as.Date(Sys.Date())
+fig_height: 2.6
+fig_width: 4
+author: Joe Brew and Lucia Fernandez
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab
+---
+
+---
+title: Efficient assignation of spatial clusters
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE, comment = NA, error= FALSE, cache = FALSE}
+# No scientific notation
+options(scipen=999)
+
+# Packages 
+library(xtable)
+library(knitr)
+library(Hmisc)
+library(raster)
+library(maptools)
+library(rgeos)
+library(plyr)
+library(dplyr)
+library(sp)
+
+# Basic knitr options
+opts_chunk$set(comment = NA, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, cache = F)
+
+# Parameters into memory out of list
+# Specify paramaters
+for (i in 1:length(params)){
+  assign(names(params)[i],
+         params[[i]],
+         env = .GlobalEnv)
+}
+```
+
+```{r}
+# Machine and user info
+si <- Sys.info()
+technical_message <-
+  paste0('(Generated on ',
+         format(creation_date, '%B %d, %Y'),
+         '\nBy ',
+         si['user'],
+         '\nOn a ',
+         si['nodename'], 
+         ' ',
+         si['sysname'],
+         '\nMachine using R version ',
+         si['release'],
+         ')')
+rm(si)
+```
+
+`r paste0(technical_message)`
+
+# The problem
+
+We have a geographical area (the district of Manhiça, for the purposes of this example), with a number of households (1,000, for the purpose of this example). We need to assign each household to a cluster of a specific size (10, for this example). Since 1 field-worker will be assigned to each cluster, we want to minimize the inter-cluster distance (ie, the distance between households in each cluster). The intra-cluster distance (ie, the distance between clusters) is irrelevant.
+
+# The approach
+
+We use a computational, rather than statistical, approach to solving this problem. In simple terms, our algorithm does the following.  
+
+1. Picks a random household to begin. 
+2. Picks the nearest 9 households to form a cluster.
+3. Starts a new cluster, beginning with the household for which the average distance to remaining households is the lowest.
+4. Picks the nearest 9 houeholds to form a cluster.
+5. Repeats until all households have been assigned to a cluster.
+6. Repeats steps 1-5 multiple times, so that results can be compared and the ideal configuration can be chosen.
+
+# Walk-through
+
+We start with the district of Maniça.
+
+```{r, echo = TRUE}
+# Get a spatialpolygonsdataframe of mozambique
+moz <- getData('GADM', country = 'MOZ', level = 2)
+
+# Subset to just include manhica
+man <- moz[moz@data$NAME_2 == 'Manhiça', ]
+
+# Visualize
+plot(man)
+```
+
+We then create 1000 random points (in real practice, actual household locations can be used).
+
+```{r, echo = TRUE}
+# Create a dataframe named locations for storing our points in
+locations <- data.frame(id = 1:1000, 
+                        lat = NA,
+                        lon = NA)
+
+# Get the range for Manhica
+bb <- bbox(man)
+
+# Populate locations
+for (i in 1:nrow(locations)){
+  
+  # Create a placeholder to indicate whether our point is in Manhica
+  in_man <- FALSE
+  
+  # If not in manhica, create a point in manhica
+  while(!in_man){
+    # Create a point
+    lon <- sample(seq(bb[1,1],
+                      bb[1,2],
+                      length = 10000),
+                  1)
+    lat <- sample(seq(bb[2,1],
+                      bb[2,2],
+                      length = 10000),
+                  1)
+    # Put that point into a spatial dataframe
+    the_point <- data.frame(lon = lon,
+                            lat = lat)
+    coordinates(the_point) <- ~lon+lat
+    proj4string(the_point) <- proj4string(man)
+    
+    # Check to see if it's in the boundaries of Manhica
+    in_man <- as.logical(!is.na(over(man, the_point)))
+  }
+  # having confirmed that the point is in manhica, 
+  # pop it into the dataframe
+  locations$lon[i] <- lon
+  locations$lat[i] <- lat
+}
+
+# Make locations a spatial points dataframe and plot
+locations$x <- locations$lon
+locations$y <- locations$lat
+coordinates(locations) <- ~x +y
+proj4string(locations) <- proj4string(man)
+plot(man)
+points(locations, 
+       col = adjustcolor('red', alpha.f = 0.3), 
+       pch = 3)
+```
+
+Now the heavy-lifting begins. We will do steps 1-5 (mentioned above) 20 times to test.
+
+```{r}
+# Define our algorithm
+cluster_optimize <- function(times = 2,
+                             cluster_size = 10,
+                             plot_map = FALSE){
+  
+  # Create a placeholder list to store results
+  results_list <- list()
+  
+  # Repeat [times] times the search
+  for (time in 1:times){
+    
+    message(paste0('time ', time))
+
+    # Create a fresh copy of locations
+    locations_fresh <- locations
+    # Specify that none of the points have yet been selected
+    locations_fresh$selected <- FALSE
+    # Create a column for clusters
+    locations_fresh$cluster <- NA
+    # Create column for simulations
+    locations_fresh$simulation_number <- time
+
+    # Pick a random point
+    start_index <- sample(which(!locations_fresh$selected), 1)
+    
+    # Start the clster counter 
+    cluster <- 1
+    
+    # Go until all the points are filled
+    while(length(which(!locations_fresh$selected)) > 0){
+      message(paste0('making cluster number ', cluster,'\n',
+                     length(which(!locations_fresh$selected)),
+                     ' points remaining'))
+      # Use the start index to get a start point
+      start_point <- locations_fresh[start_index,]
+      # Remove that start point from the list of eligibles
+      locations_fresh$selected[start_index] <- TRUE
+      # Assign the cluster to the start point
+      locations_fresh$cluster[start_index] <- TRUE
+      
+      # Get the distance of all remaining points from the start_point
+      all_distances <- spDistsN1(pts = locations, 
+                                 pt = start_point,
+                                 longlat = TRUE)
+      all_distances <- data.frame(index = 1:nrow(locations),
+                                  distance = all_distances)
+      # Remove those rows which are ineligible (already selected/start_point)
+      all_distances <- 
+        all_distances[! all_distances$index %in% which(locations_fresh$selected),]
+      
+      # Order by distance
+      all_distances <- all_distances[order(all_distances$distance),]
+      
+      # Get the cluster_size nearest points
+      nearest <- all_distances[1:(cluster_size - 1),]
+      
+      # Mark those nearest points as part of the same cluster
+      locations_fresh$cluster[nearest$index] <- cluster
+      # And mark them as selected
+      locations_fresh$selected[nearest$index] <- TRUE
+
+      # Get the start_point for the next round 
+      # (the point which is closest to all the others)
+      possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
+                            longlat = TRUE)
+      start_index <- locations_fresh$id[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+      
+      # Move the cluster counter up
+      cluster <- cluster + 1
+      
+      # Plot if necessary
+      if(plot_map){
+        colors <- ifelse(locations_fresh$selected, 'red', 'grey')
+        plot(man)
+        points(locations_fresh, col = colors, pch = 3)
+        points(locations_fresh[nearest$index,], col = 'blue', pch = 1)
+        legend('topleft',
+               legend = c('This cluster',
+                          'Already selected',
+                          'Not selected yet'),
+               pch = c(1, 3, 3),
+               col = c('blue', 'red', 'grey'),
+               border = FALSE,
+               bty = 'n')
+        title(main = paste0('Simulation number ', time, '\n',
+                            'Cluster number ', cluster))
+        # Sys.sleep(1)
+      }
+    } # all locations have now been selected
+    
+    # Put results into the list
+    results_list[[time]] <- data.frame(locations_fresh)
+  }
+  # Combine all of the results of the results list into one
+  results <- do.call('rbind', results_list)
+  
+  # Return the results
+  return(results)
+}
+
+x = cluster_optimize(plot_map = FALSE)
+
+```
