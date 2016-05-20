@@ -250,6 +250,6 @@ cluster_optimize <- function(times = 2,
   return(results)
 }
 
-x = cluster_optimize(plot_map = FALSE)
+x = cluster_optimize(plot_map = TRUE)
 
 ```
