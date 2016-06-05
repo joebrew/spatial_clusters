@@ -1,7 +1,6 @@
 ---
 params:
   example_param: 1
-  creation_date: !r as.Date(Sys.Date())
 fig_height: 2.6
 fig_width: 4
 author: Joe Brew and Lucia Fernandez
