@@ -1,19 +1,3 @@
----
-fig_height: 2.6
-fig_width: 4
-author: Joe Brew and Lucia Fernandez
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    theme: spacelab
----
-
----
-title: Efficient assignation of spatial clusters
----
-
-```{r, echo = FALSE, warning = FALSE, message = FALSE, comment = NA, error= FALSE, cache = FALSE}
 # No scientific notation
 options(scipen=999)
 
@@ -33,49 +17,6 @@ library(readr)
 # Basic knitr options
 opts_chunk$set(comment = NA, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, cache = F)
 
-```
-
-```{r}
-# Machine and user info
-creation_date<-Sys.Date()
-si <- Sys.info()
-technical_message <-
-  paste0('(Generated on ',
-         format(creation_date, '%B %d, %Y'),
-         '\nBy ',
-         si['user'],
-         '\nOn a ',
-         si['nodename'], 
-         ' ',
-         si['sysname'],
-         '\nMachine using R version ',
-         si['release'],
-         ')')
-rm(si)
-```
-
-`r paste0(technical_message)`
-
-# The problem
-
-We have a geographical area (the district of Manhiça, for the purposes of this example), with a number of households (1,000, for the purpose of this example). We need to assign each household to a cluster of a specific size (10, for this example). Since 1 field-worker will be assigned to each cluster, we want to minimize the inter-cluster distance (ie, the distance between households in each cluster). The intra-cluster distance (ie, the distance between clusters) is irrelevant.
-
-# The approach
-
-We use a computational, rather than statistical, approach to solving this problem. In simple terms, our algorithm does the following.  
-
-1. Picks a random household to begin. 
-2. Picks the nearest 9 households to form a cluster.
-3. Starts a new cluster, beginning with the household for which the average distance to remaining households is the lowest.
-4. Picks the nearest 9 houeholds to form a cluster.
-5. Repeats until all households have been assigned to a cluster.
-6. Repeats steps 1-5 multiple times, so that results can be compared and the ideal configuration can be chosen.
-
-# Walk-through
-
-We start with the district of Maniça.
-
-```{r, echo = TRUE}
 # Get a spatialpolygonsdataframe of mozambique
 moz <- getData('GADM', country = 'MOZ', level = 2)
 
@@ -87,11 +28,7 @@ moz <- getData('GADM', country = 'MOZ', level = 2)
 mag <- moz[moz@data$NAME_2 == 'Magude', ]
 # Visualize
 plot(mag)
-```
 
-We then read in our data (lat, lng and point id).
-
-```{r, echo = TRUE}
 ## FAKE DATA
 # # Create a dataframe named locations for storing our points in
 # locations <- data.frame(id = 1:1000, 
@@ -102,11 +39,11 @@ We then read in our data (lat, lng and point id).
 # Read in bednets data
 if (Sys.info()["user"] == "Lucia") {
         real_data <- '/Users/Lucia/Dropbox/MALTEM Entomology/8. Scientific Studies/3. VECE- Efficacy/4. sample_size_house_selection/House selection bednets/updated_db/households_list_reshaped_2016-04-24.csv'
-
+        
         
 } else {
         real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
-
+        
 }
 
 locations <- read_csv(real_data)
@@ -164,30 +101,7 @@ plot(mag)
 points(locations, 
        col = adjustcolor('red', alpha.f = 0.3), 
        pch = 3)
-```
 
-Now the heavy-lifting begins. We will do steps 1-5 (mentioned above) to test.
-
-```{r}
 # Source our function
 source('cluster_optimize.R')
-# run
-x = cluster_optimize(#times = 1,
-                     cluster_size = 12,
-                     sleep = 0.5,
-                     plot_map = TRUE,
-                     locations = locations,
-                     shp=mag, 
-                     start="far", 
-                     rest="close",
-                     messaging = TRUE)
-
-```
-
-# Evaluation of within group inter-point distances.
-
-
-```{r}
-cluster_evaluate(clusters=x)
-       
-```
+source('cluster_evaluate.R')
