@@ -181,3 +181,11 @@ x = cluster_optimize(times = 1,
                      shp=mag)
 
 ```
+
+# Evaluation of within group inter-point distances.
+
+
+```{r}
+cluster_evaluate(clusters=x)
+       
+```
