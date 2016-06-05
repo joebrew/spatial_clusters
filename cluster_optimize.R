@@ -17,12 +17,16 @@ cluster_optimize <- function(times = 2,
                              plot_map = FALSE,
                              sleep = 0.3,
                              best_only = TRUE,
-                             locations){
+                             locations, 
+                             shp){
   
   require(dplyr)
   
   # Create a placeholder list to store results
   results_list <- list()
+  
+  ## We are adding a colum with a numeric index for each of the points id
+  locations$index<-1:nrow(locations)
   
   # Repeat [times] times the search
   for (time in 1:times){
@@ -44,8 +48,7 @@ cluster_optimize <- function(times = 2,
     # (the point which is furthest from all other points)
     possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
                          longlat = TRUE)
-    start_index <- locations_fresh$id[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
-    
+    start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
     # Start the clster counter 
     cluster <- 1
     
@@ -95,7 +98,7 @@ cluster_optimize <- function(times = 2,
       # (the point which is furthest to all the others)
       possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
                            longlat = TRUE)
-      start_index <- locations_fresh$id[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+      start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
       
       # Move the cluster counter up
       cluster <- cluster + 1
@@ -103,7 +106,7 @@ cluster_optimize <- function(times = 2,
       # Plot if necessary
       if(plot_map){
         colors <- ifelse(locations_fresh$selected, 'red', 'grey')
-        plot(man)
+        plot(shp)
         points(locations_fresh, col = colors, pch = 3)
         points(locations_fresh[nearest$index,], col = 'blue', pch = 1)
         legend('topleft',

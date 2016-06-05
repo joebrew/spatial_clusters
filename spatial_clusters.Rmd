@@ -80,17 +80,16 @@ We start with the district of Maniça.
 moz <- getData('GADM', country = 'MOZ', level = 2)
 
 # Plot a map of mozambique
-png(filename = "map.png")
-plot(moz)
-dev.off()
+# plot(moz)
+
 # Subset to just include manhica
-man <- moz[moz@data$NAME_2 == 'Manhiça', ]
+# man <- moz[moz@data$NAME_2 == 'Manhiça', ]
 mag <- moz[moz@data$NAME_2 == 'Magude', ]
 # Visualize
-plot(man)
+plot(mag)
 ```
 
-We then create 1000 random points (in real practice, actual household locations can be used).
+We then read in our data (lat, lng and point id).
 
 ```{r, echo = TRUE}
 ## FAKE DATA
@@ -101,7 +100,14 @@ We then create 1000 random points (in real practice, actual household locations 
 
 ## REAL DATA
 # Read in bednets data
-real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
+if (Sys.info()["user"] == "Lucia") {
+        real_data <- '/Users/Lucia/Dropbox/MALTEM Entomology/8. Scientific Studies/3. VECE- Efficacy/4. sample_size_house_selection/House selection bednets/updated_db/households_list_reshaped_2016-04-24.csv'
+
+        
+} else {
+        real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
+
+}
 
 locations <- read_csv(real_data)
 
@@ -146,13 +152,12 @@ locations$id <- locations$FAMILY_ID
 # }
 
 # Make locations a spatial points dataframe and plot
+## We do this because otherwise lat and lon will not be columns any more after transforming into a geo-point data set.
 locations$x <- locations$lon
 locations$y <- locations$lat
 locations <- data.frame(locations)
 # Remove any NA points
-
-# Lucia continue here!
-
+locations<-locations[-which(is.na(locations$lat)),]
 coordinates(locations) <- ~x +y
 proj4string(locations) <- proj4string(mag)
 plot(mag)
@@ -161,17 +166,18 @@ points(locations,
        pch = 3)
 ```
 
-Now the heavy-lifting begins. We will do steps 1-5 (mentioned above) 20 times to test.
+Now the heavy-lifting begins. We will do steps 1-5 (mentioned above) to test.
 
 ```{r}
 # Source our function
 source('cluster_optimize.R')
 # run
 x = cluster_optimize(times = 1,
-                     cluster_size = 5,
-                     sleep = 0.3,
+                     cluster_size = 12,
+                     sleep = 1.3,
                      plot_map = TRUE,
                      locations = locations,
-                     best_only = TRUE)
+                     best_only = TRUE,
+                     shp=mag)
 
 ```
