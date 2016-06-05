@@ -28,6 +28,7 @@ library(rgeos)
 library(plyr)
 library(dplyr)
 library(sp)
+library(readr)
 
 # Basic knitr options
 opts_chunk$set(comment = NA, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, cache = F)
@@ -84,7 +85,7 @@ plot(moz)
 dev.off()
 # Subset to just include manhica
 man <- moz[moz@data$NAME_2 == 'Manhiça', ]
-
+mag <- moz[moz@data$NAME_2 == 'Magude', ]
 # Visualize
 plot(man)
 ```
@@ -92,52 +93,69 @@ plot(man)
 We then create 1000 random points (in real practice, actual household locations can be used).
 
 ```{r, echo = TRUE}
-# Create a dataframe named locations for storing our points in
-locations <- data.frame(id = 1:1000, 
-                        lat = NA,
-                        lon = NA)
+## FAKE DATA
+# # Create a dataframe named locations for storing our points in
+# locations <- data.frame(id = 1:1000, 
+#                         lat = NA,
+#                         lon = NA)
 
-# Get the range for Manhica
-bb <- bbox(man)
+## REAL DATA
+# Read in bednets data
+real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
 
-# Populate locations
-for (i in 1:nrow(locations)){
-  
-  # Create a placeholder to indicate whether our point is in Manhica
-  in_man <- FALSE
-  
-  # If not in manhica, create a point in manhica
-  while(!in_man){
-    # Create a point
-    lon <- sample(seq(bb[1,1],
-                      bb[1,2],
-                      length = 10000),
-                  1)
-    lat <- sample(seq(bb[2,1],
-                      bb[2,2],
-                      length = 10000),
-                  1)
-    # Put that point into a spatial dataframe
-    the_point <- data.frame(lon = lon,
-                            lat = lat)
-    coordinates(the_point) <- ~lon+lat
-    proj4string(the_point) <- proj4string(man)
-    
-    # Check to see if it's in the boundaries of Manhica
-    in_man <- as.logical(!is.na(over(man, the_point)))
-  }
-  # having confirmed that the point is in manhica, 
-  # pop it into the dataframe
-  locations$lon[i] <- lon
-  locations$lat[i] <- lat
-}
+locations <- read_csv(real_data)
+
+# Create columns which are named appropriately for use with our funciton
+locations$lat <- locations$LAT
+locations$long <- locations$LNG
+locations$id <- locations$FAMILY_ID
+
+# # Get the range for Magude
+# bb <- bbox(mag)
+# 
+# # Populate locations
+# for (i in 1:nrow(locations)){
+#   
+#   # Create a placeholder to indicate whether our point is in maghica
+#   in_mag <- FALSE
+#   
+#   # If not in maghica, create a point in maghica
+#   while(!in_mag){
+#     # Create a point
+#     lon <- sample(seq(bb[1,1],
+#                       bb[1,2],
+#                       length = 10000),
+#                   1)
+#     lat <- sample(seq(bb[2,1],
+#                       bb[2,2],
+#                       length = 10000),
+#                   1)
+#     # Put that point into a spatial dataframe
+#     the_point <- data.frame(lon = lon,
+#                             lat = lat)
+#     coordinates(the_point) <- ~lon+lat
+#     proj4string(the_point) <- proj4string(mag)
+#     
+#     # Check to see if it's in the boundaries of maghica
+#     in_mag <- as.logical(!is.na(over(mag, the_point)))
+#   }
+#   # having confirmed that the point is in maghica, 
+#   # pop it into the dataframe
+#   locations$lon[i] <- lon
+#   locations$lat[i] <- lat
+# }
 
 # Make locations a spatial points dataframe and plot
 locations$x <- locations$lon
 locations$y <- locations$lat
+locations <- data.frame(locations)
+# Remove any NA points
+
+# Lucia continue here!
+
 coordinates(locations) <- ~x +y
-proj4string(locations) <- proj4string(man)
-plot(man)
+proj4string(locations) <- proj4string(mag)
+plot(mag)
 points(locations, 
        col = adjustcolor('red', alpha.f = 0.3), 
        pch = 3)
