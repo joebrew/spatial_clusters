@@ -1,6 +1,4 @@
 ---
-params:
-  example_param: 1
 fig_height: 2.6
 fig_width: 4
 author: Joe Brew and Lucia Fernandez
@@ -19,6 +17,7 @@ title: Efficient assignation of spatial clusters
 # No scientific notation
 options(scipen=999)
 
+
 # Packages 
 library(xtable)
 library(knitr)
@@ -33,17 +32,11 @@ library(sp)
 # Basic knitr options
 opts_chunk$set(comment = NA, echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, cache = F)
 
-# Parameters into memory out of list
-# Specify paramaters
-for (i in 1:length(params)){
-  assign(names(params)[i],
-         params[[i]],
-         env = .GlobalEnv)
-}
 ```
 
 ```{r}
 # Machine and user info
+creation_date<-Sys.Date()
 si <- Sys.info()
 technical_message <-
   paste0('(Generated on ',
@@ -85,6 +78,10 @@ We start with the district of Maniça.
 # Get a spatialpolygonsdataframe of mozambique
 moz <- getData('GADM', country = 'MOZ', level = 2)
 
+# Plot a map of mozambique
+png(filename = "map.png")
+plot(moz)
+dev.off()
 # Subset to just include manhica
 man <- moz[moz@data$NAME_2 == 'Manhiça', ]
 
