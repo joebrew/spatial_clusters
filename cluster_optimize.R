@@ -18,7 +18,9 @@ cluster_optimize <- function(times = 2,
                              sleep = 0.3,
                              best_only = TRUE,
                              locations, 
-                             shp){
+                             shp, 
+                             start=c("far", "close", "random"),
+                             rest=c("far", "close", "random")){
   
   require(dplyr)
   
@@ -48,7 +50,17 @@ cluster_optimize <- function(times = 2,
     # (the point which is furthest from all other points)
     possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
                          longlat = TRUE)
-    start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+    
+    if(start=="far") {
+            start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+    } else if(start=="close"){
+            start_index <- locations_fresh$index[!locations_fresh$selected][which.min(rowSums(possibles))][1]  
+    }else if(start=="random") {
+            start_index <- sample(which(!locations_fresh$selected),1)
+    }else {
+            stop("start must be one of (far, close, random)")
+    }
+    
     # Start the clster counter 
     cluster <- 1
     
@@ -95,10 +107,18 @@ cluster_optimize <- function(times = 2,
       locations_fresh$complete_cluster[nearest$index] <- !incomplete_cluster
       
       # Get the start_point for the next round 
-      # (the point which is furthest to all the others)
       possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
                            longlat = TRUE)
-      start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+      if (rest=="far") {
+              start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
+      } else if(rest=="close") {
+              start_index <- locations_fresh$index[!locations_fresh$selected][which.min(rowSums(possibles))][1]  
+      } else if(rest=="random") {
+              remaining <- locations_fresh$index[!locations_fresh$selected]
+              start_index <- sample(remaining, 1)
+      } else {
+              stop("rest must be one of (far, close, random)")
+      }
       
       # Move the cluster counter up
       cluster <- cluster + 1

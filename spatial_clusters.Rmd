@@ -178,7 +178,9 @@ x = cluster_optimize(times = 1,
                      plot_map = TRUE,
                      locations = locations,
                      best_only = TRUE,
-                     shp=mag)
+                     shp=mag, 
+                     start="random", 
+                     rest="far")
 
 ```
 
