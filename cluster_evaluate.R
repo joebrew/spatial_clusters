@@ -7,11 +7,11 @@ cluster_evaluate<-function(clusters){
         clusters <-clusters %>%
                 group_by(cluster) %>%
                 mutate(centroid_lat=mean(lat),
-                       centroid_long=mean(long)) %>%
+                       centroid_lon=mean(lon)) %>%
                 ungroup
         # Add a distance colum
-        clusters$distance <- spDists(x=cbind(clusters$long,clusters$lat),
-                                     y=cbind(clusters$centroid_long,
+        clusters$distance <- spDists(x=cbind(clusters$lon,clusters$lat),
+                                     y=cbind(clusters$centroid_lon,
                                              clusters$centroid_lat),
                                      diagonal = TRUE,
                                      longlat = TRUE)

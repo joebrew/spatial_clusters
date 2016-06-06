@@ -4,6 +4,7 @@
 #' @param cluster_size The size of each cluster
 #' @param plot_map Whether to plot a map after each cluster formation (slows down operations significantly)
 #' @param locations a SpatialPointsDataFrame containing 3 columns: id, lat, and lon
+#' @param shp The shapefile to plot (only if plot_map is TRUE)
 #' @param sleep How many seconds to sleep between plots
 #' @return A dataframe of size \code{times} times the number of points in \code{locations}, with columns indicating each \code{simulation_number}
 #' @export
