@@ -1,6 +1,6 @@
 
 theme_brew <- 
-  function(base_size = 8, base_family = "Arial") {
+  function(base_size = 8){#, base_family = "Arial") {
     require(RColorBrewer)
     
     # Generate the colors for the chart procedurally with RColorBrewer
@@ -32,26 +32,26 @@ theme_brew <-
       # Format the legend, but hide by default
       # theme(legend.position="none") +
       theme(legend.background = element_rect(fill=color_background)) +
-      theme(legend.text = element_text(family = base_family,
+      theme(legend.text = element_text(#family = base_family,
                                        size=base_size * 0.7,
                                        color=color_axis_title)) +
       
       # Set title and axis labels, and format these and tick marks
-      theme(plot.title=element_text(family = base_family,
+      theme(plot.title=element_text(#family = base_family,
                                     color=color_title, 
                                     size=base_size*1.2, 
                                     vjust=1.25)) +
-      theme(axis.text.x=element_text(family = base_family,
+      theme(axis.text.x=element_text(#family = base_family,
                                      size=base_size * 0.8,
                                      color=color_axis_text)) +
-      theme(axis.text.y=element_text(family = base_family,
+      theme(axis.text.y=element_text(#family = base_family,
                                      size=base_size * 0.8,
                                      color=color_axis_text)) +
-      theme(axis.title.x=element_text(family = base_family,
+      theme(axis.title.x=element_text(#family = base_family,
                                       size=base_size * 0.8,
                                       color=color_axis_title, 
                                       vjust=0)) +
-      theme(axis.title.y=element_text(family = base_family,
+      theme(axis.title.y=element_text(#family = base_family,
                                       size=base_size * 0.8,
                                       color=color_axis_title, 
                                       vjust=1.25)) +
