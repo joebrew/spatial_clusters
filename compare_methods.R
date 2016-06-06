@@ -80,7 +80,9 @@ for (country in countries){
   }
 }
 
-# Bind results_list
+save.image('~/Desktop/temp.RData')
+
+# Bind results_list (super slow)
 results <- do.call('rbind', results_list)
 
 # Prepare for plotting
