@@ -1,5 +1,3 @@
-#### MAP OF TORONTO
-
 # Libraries
 library(leaflet)
 library(ggmap)
