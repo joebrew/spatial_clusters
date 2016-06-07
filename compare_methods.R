@@ -14,7 +14,7 @@ source('cluster_optimize.R')
 source('cluster_evaluate.R')
 
 # How many iterations per strategy per country
-how_many <- 10000
+how_many <- 2
 
 # How many times it has to be run
 countries <- as.character(sort(unique(africa_df$COUNTRY)))
