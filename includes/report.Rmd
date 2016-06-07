@@ -1,0 +1,17 @@
+---
+title: "This is just a test"
+author: "Joe Brew"
+date: "May 6, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## User-inputted plotting code
+
+
+```{r}
+eval(parse(text = input$plot_code))
+```

@@ -34,11 +34,11 @@ ui <-
                                         br(), br(),
                                         downloadButton('download_pdf_from_rmd',
                                                        'Download PDF from Rmd'),
-                                        br(), br()#,
+                                        br(), br(),
                                         
                                         # URL given current choices:
-                                        # shinyURL.ui(label = 'Share URL of current app state',
-                                        #             tinyURL = FALSE)
+                                        shinyURL.ui(label = 'Share URL of current app state',
+                                                    tinyURL = FALSE)
                                  ),
                                  
                                  column(8,
