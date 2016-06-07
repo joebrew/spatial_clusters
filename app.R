@@ -11,13 +11,29 @@ library(ggplot2)
 # UI --------------------------------------------------------------
 ui <-
         navbarPage(
-                title = 'Research portal',
+                title = 'Clustering ',
                 theme = shinytheme("flatly"),
                 
                 # tabsetPanel(
                 tabPanel('Tool',
                          fluidRow(
                                  column(4,
+                                        fileInput('file1', 'Choose CSV File',
+                                                  accept=c('text/csv', 
+                                                           'text/comma-separated-values,text/plain', 
+                                                           '.csv')),
+                                        tags$hr(),
+                                        checkboxInput('header', 'Header', TRUE),
+                                        radioButtons('sep', 'Separator',
+                                                     c(Comma=',',
+                                                       Semicolon=';',
+                                                       Tab='\t'),
+                                                     ','),
+                                        radioButtons('quote', 'Quote',
+                                                     c(None='',
+                                                       'Double Quote'='"',
+                                                       'Single Quote'="'"),
+                                                     '"'),
                                         h5('Format of the dataset "fake_data":'),
                                         tableOutput('fake_data_head'),
                                         textInput('plot_code',
@@ -57,6 +73,24 @@ ui <-
 server <-
         
         function(input, output){
+                
+                ### csv upload
+                output$contents <- renderTable({
+                        
+                        # input$file1 will be NULL initially. After the user selects
+                        # and uploads a file, it will be a data frame with 'name',
+                        # 'size', 'type', and 'datapath' columns. The 'datapath'
+                        # column will contain the local filenames where the data can
+                        # be found.
+                        
+                        inFile <- input$file1
+                        
+                        if (is.null(inFile))
+                                return(NULL)
+                        
+                        read.csv(inFile$datapath, header=input$header, sep=input$sep, 
+                                 quote=input$quote)
+                })
                 
                 # Create fake data
                 fake_data <- data.frame(a = letters,
