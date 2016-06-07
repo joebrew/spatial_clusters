@@ -2,28 +2,32 @@ library(ggplot2)
 library(readr)
 library(dplyr)
 library(ggthemes)
+# Theme for plotting
 source('theme.R')
 
 ## Prepare data
 source('prepare_africa_data.R')
-# source('prepare_magude_data.R')
 africa_df <- prepare_africa_data()
-# x = prepare_magude_data()
 
 # Source our functions for running and evaluating the algorithm
 source('cluster_optimize.R')
 source('cluster_evaluate.R')
 
-# Since the number of rows is known
-# and each results is only one row of a datframe
-# we could replace the results_list with a dataframe...
-results_list <- list()
+# Create a results dataframe for placing the 
+# results of each iteration
+results <- data.frame(performance =  as.numeric(NA),
+                      start = as.character(NA),
+                      rest = as.character(NA),
+                      n = as.numeric(NA),
+                      country = as.character(NA),
+                      stringsAsFactors = FALSE)
+results <- results[-1,]
 
 counter <- 1
 
 # How many times it has to be run
-countries <- sort(unique(africa_df$COUNTRY))
-how_many <- 1000
+countries <- as.character(sort(unique(africa_df$COUNTRY)))
+how_many <- 10000
 total <- ((how_many * 5 ) + 4) * length(countries)
 for (country in countries){
   for (start in c('far', 'close', 'random')){
@@ -55,14 +59,16 @@ for (country in countries){
         
         # Create dataframe to store results
         results_df <- data.frame(performance =  
-                                   cluster_evaluate(clusters = x),
+                                 cluster_evaluate(clusters = x),
                                  start = start,
                                  rest = rest,
                                  n = n,
-                                 country = country)
+                                 country = country,
+                                 stringsAsFactors = FALSE)
         
         # Stick the results into the list
-        results_list[[counter]] <- results_df
+        # results_list[[counter]] <- results_df
+        results[counter,] <- results_df
         end_time <- Sys.time()
         total_time <- end_time - start_time
         # Message
@@ -80,11 +86,7 @@ for (country in countries){
   }
 }
 
-
-# Bind results_list (super slow)
-results <- do.call('rbind', results_list)
-
-save.image('~/Desktop/temp.RData')
+save.image('evaluation/results_', how_many, '_simulations.RData')
 
 # Add strategy to results
 results$strategy <- paste0(results$start, '-', results$rest)
@@ -120,6 +122,7 @@ by_country$strategy <- factor(by_country$strategy, levels = z$strategy)
 
 
 # Make a violin plot of all results
+pdf(file = 'evaluation/aggregate_results.pdf')
 ggplot(data = results,
        aes(x = strategy,
            y = adj_performance)) +
@@ -132,8 +135,9 @@ ggplot(data = results,
   geom_hline(yintercept = 1, color = 'red', alpha = 0.5) +
   labs(title = 'Performance breakdown',
        subtitle = '1,000 simulations for each strategy for each 56 African countries')
+dev.off()
 
-pdf(file = 'all_countries.pdf')
+pdf(file = 'evaluation/all_countries.pdf')
 # Do the same for each country
 for (i in 1:length(countries)){
   this_country <- as.character(countries[i])
@@ -165,65 +169,51 @@ for (i in 1:length(countries)){
     
 }
 dev.off()
-# Prepare for aggregated plotting
-x <-
-  results %>%
-  group_by(start, rest, country) %>%
-  summarise(avg_performance = mean(performance)) %>%
-  ungroup %>%
-  group_by(country) %>%
-  mutate(adj_performance = avg_performance / mean(avg_performance)) %>%
-  ungroup %>%
-  arrange(adj_performance) %>%
-  mutate(strategy = as.character(paste0(start, '-', rest)))
-
-x$strategy <- factor(x$strategy)
-
-# # Get rid of the garbage strategies
-# x <- x %>%
-#   filter(!strategy %in% c('close-random',
-#                           'far-random'))
-
-# Get all countries aggregated together
-y <- x %>%
-  group_by(strategy) %>%
-  summarise(adj_performance = mean(adj_performance)) %>%
-  ungroup %>%
-  arrange(adj_performance)
-
-# Order the factors by overall
-x$strategy <- factor(x$strategy, levels = y$strategy)
-
-# Plot all countries
-ggplot(data = x,
-       aes(x = strategy,
-           y = adj_performance)) +
-  geom_bar(stat = 'identity') +
-  facet_wrap(~country) +
-  geom_hline(yintercept = 1, color = 'red') +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-ggplot(data = x,
-       aes(x = strategy,
-           y = adj_performance)) +
-  geom_jitter(alpha = 0.6) +
-  geom_violin(alpha = 0.6) +
-  theme_brew(base_size = 14) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))  +
-  xlab('Strategy') +
-  ylab('Performance (1 is average, lower is better)')  +
-  geom_hline(yintercept = 1, color = 'red', alpha = 0.5)
-  
-
-
-# # Plot overall
-# ggplot(data = y,
+# # Prepare for aggregated plotting
+# x <-
+#   results %>%
+#   group_by(start, rest, country) %>%
+#   summarise(avg_performance = mean(performance)) %>%
+#   ungroup %>%
+#   group_by(country) %>%
+#   mutate(adj_performance = avg_performance / mean(avg_performance)) %>%
+#   ungroup %>%
+#   arrange(adj_performance) %>%
+#   mutate(strategy = as.character(paste0(start, '-', rest)))
+# 
+# x$strategy <- factor(x$strategy)
+# 
+# # # Get rid of the garbage strategies
+# # x <- x %>%
+# #   filter(!strategy %in% c('close-random',
+# #                           'far-random'))
+# 
+# # Get all countries aggregated together
+# y <- x %>%
+#   group_by(strategy) %>%
+#   summarise(adj_performance = mean(adj_performance)) %>%
+#   ungroup %>%
+#   arrange(adj_performance)
+# 
+# # Order the factors by overall
+# x$strategy <- factor(x$strategy, levels = y$strategy)
+# 
+# # Plot all countries
+# ggplot(data = x,
 #        aes(x = strategy,
 #            y = adj_performance)) +
 #   geom_bar(stat = 'identity') +
+#   facet_wrap(~country) +
 #   geom_hline(yintercept = 1, color = 'red') +
 #   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 # 
-
-# Write a csv of results
-# write_csv(results, '~/Desktop/results.csv')
+# ggplot(data = x,
+#        aes(x = strategy,
+#            y = adj_performance)) +
+#   geom_jitter(alpha = 0.6) +
+#   geom_violin(alpha = 0.6) +
+#   theme_brew(base_size = 14) +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1))  +
+#   xlab('Strategy') +
+#   ylab('Performance (1 is average, lower is better)')  +
+#   geom_hline(yintercept = 1, color = 'red', alpha = 0.5)
