@@ -13,22 +13,29 @@ africa_df <- prepare_africa_data()
 source('cluster_optimize.R')
 source('cluster_evaluate.R')
 
-# Create a results dataframe for placing the 
-# results of each iteration
-results <- data.frame(performance =  as.numeric(NA),
-                      start = as.character(NA),
-                      rest = as.character(NA),
-                      n = as.numeric(NA),
-                      country = as.character(NA),
-                      stringsAsFactors = FALSE)
-results <- results[-1,]
-
-counter <- 1
+# How many iterations per strategy per country
+how_many <- 10000
 
 # How many times it has to be run
 countries <- as.character(sort(unique(africa_df$COUNTRY)))
-how_many <- 10000
 total <- ((how_many * 5 ) + 4) * length(countries)
+
+
+# Create a results dataframe for placing the 
+# results of each iteration
+nas <- rep(NA, total)
+results <- data.frame(performance =  as.numeric(nas),
+                      start = as.character(nas),
+                      rest = as.character(nas),
+                      n = as.numeric(nas),
+                      country = as.character(nas),
+                      stringsAsFactors = FALSE)
+
+# Start a counter so as to keep track of progress
+counter <- 1
+
+# Begin loop of testing each strategy
+# how_many times for each map
 for (country in countries){
   for (start in c('far', 'close', 'random')){
     for(rest in c('far', 'close', 'random')){
@@ -46,7 +53,6 @@ for (country in countries){
       this_country <- africa_df[africa_df@data$COUNTRY == country,]
       
       for(n in 1:real_times){
-        message(paste0('starting counter: ', counter, '\n'))
         start_time <- Sys.time()
         # run the function once
         x = cluster_optimize(cluster_size = 8,
