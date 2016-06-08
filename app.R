@@ -18,17 +18,31 @@ ui <-
                 tabPanel('Tool',
                          fluidRow(
                                  column(4,
-                                        fileInput('file1', 'Upload a .csv file with columns named "id", "lat", "long" of your points',
+                                        h3("Upload your data here"),
+                                        fileInput('file1', 'A .csv file with columns "id", "lat", "lon"',
                                                   accept=c('text/csv', 
                                                            'text/comma-separated-values,text/plain', 
                                                            '.csv')),
-                                        tags$hr(),
-                                        checkboxInput('header', 'Header', TRUE),
+                                        
                                         radioButtons('sep', 'Separator',
                                                      c(Comma=',',
                                                        Semicolon=';',
                                                        Tab='\t'),
                                                      ','),
+                                        # checkboxInput('header', 'Header', TRUE),
+                                        tags$hr(),
+                                        textInput('size',
+                                                  'Enter your desire cluster size',
+                                                  value = "size"),
+                                        selectInput("first", "Chose the strategy for the selection of the first point:",
+                                                    c("Furthest" = "far",
+                                                      "Closest" = "cloase",
+                                                      "Random" = "random")),
+                                        selectInput("subsequents", "Choose the strategy for the selection of subsequent points:",
+                                                    c("Furthest" = "far",
+                                                      "Closest" = "cloase",
+                                                      "Random" = "random")),
+                                       
                                         radioButtons('quote', 'Quote',
                                                      c(None='',
                                                        'Double Quote'='"',
@@ -37,7 +51,7 @@ ui <-
                                         h5('Format of the dataset "fake_data":'),
                                         tableOutput('fake_data_head'),
                                         textInput('plot_code',
-                                                  'Write some code for a plot', 
+                                                  'Write some code for a plot',
                                                   value = "print(ggplot(data = fake_data, aes(x = b, y = c)) + geom_point() + geom_line())"),
                                         textInput('table_code',
                                                   'Write some code for manipulating the raw data:',
@@ -56,12 +70,14 @@ ui <-
                                  ),
                                  
                                  column(8,
-                                        h3('Your plot'),
+                                        h3('Please, have a look at your points'),
+                                        plotOutput("point_plot"),
                                         includeMarkdown("includes/include.md"),
                                         plotOutput('user_plot'),
                                         h3('Your data'),
                                         dataTableOutput('user_table'),
-                                        p('This is a section written using shiny helpers.')
+                                        p('This is a section written using shiny helpers.'),
+                                        tableOutput("point_table")
                                  ))),
                 tabPanel('About',
                          includeMarkdown('includes/about.md')))
@@ -72,23 +88,63 @@ server <-
         
         function(input, output){
                 
-                ### csv upload
-                output$contents <- renderTable({
-                        
-                        # input$file1 will be NULL initially. After the user selects
-                        # and uploads a file, it will be a data frame with 'name',
-                        # 'size', 'type', and 'datapath' columns. The 'datapath'
-                        # column will contain the local filenames where the data can
-                        # be found.
-                        
+                source("cluster_optimize.R")
+                
+                # Create a reactive data frame from the user upload 
+                df <- reactive({
                         inFile <- input$file1
                         
                         if (is.null(inFile))
                                 return(NULL)
                         
-                        read.csv(inFile$datapath, header=input$header, sep=input$sep, 
-                                 quote=input$quote)
+                        read.csv(inFile$datapath, header=TRUE,
+                        sep=input$sep,
+                        quote=input$quote)
                 })
+                
+                ## Running our cluster algorithm on the uploaded data
+                df_out <- reactive({
+                        inFile <- input$file1
+                        
+                        if (is.null(inFile))
+                                return(NULL)
+                        raw_data <- read.csv(inFile$datapath, header=TRUE, sep=input$sep, 
+                                 quote=input$quote)
+                        # Converting to spatial points dataframe
+                        raw_data$x <- raw_data$lon
+                        raw_data$y <- raw_data$lat
+                        coordinates(raw_data) <- ~x+y
+                        proj4string(raw_data) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+                        y <- cluster_optimize(raw_data, 
+                                              cluster_size=2,
+                                              plot_map=FALSE,
+                                              sleep=0,
+                                              start="far",
+                                              rest="close",
+                                              messaging=TRUE
+                                              )
+                        return(y)
+                        
+                        
+                })
+                
+                output$point_table <- renderTable({
+                        x <- df_out()
+                        x
+                })
+                
+                ## Create a simple plot of the points
+                output$point_plot<- renderPlot({
+                        inFile <- input$file1
+                        if(is.null(inFile)) {
+                                ggplot()     
+                        } else {
+                                my_points <- df()
+                                ggplot(my_points)+geom_point(aes(lon, lat), color="red")
+                        }
+                })
+                
+                
                 
                 # Create fake data
                 fake_data <- data.frame(a = letters,

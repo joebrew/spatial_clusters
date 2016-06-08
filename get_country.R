@@ -19,7 +19,7 @@ coords2continent = function(points)
   indices = over(pointsSP, countriesSP)
   
   #indices$continent   # returns the continent (6 continent model)
-  indices$REGION   # returns the continent (7 continent model)
+  # indices$REGION   # returns the continent (7 continent model)
   #indices$ADMIN  #returns country name
-  #indices$ISO3 # returns the ISO3 code 
+  indices$ISO3 # returns the ISO3 code 
 }
