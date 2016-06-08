@@ -18,7 +18,7 @@ ui <-
                 tabPanel('Tool',
                          fluidRow(
                                  column(4,
-                                        fileInput('file1', 'Choose CSV File',
+                                        fileInput('file1', 'Upload a .csv file with columns named "id", "lat", "long" of your points',
                                                   accept=c('text/csv', 
                                                            'text/comma-separated-values,text/plain', 
                                                            '.csv')),
@@ -45,8 +45,6 @@ ui <-
                                         downloadLink('download_csv', 'Download raw data'),
                                         br(), br(),
                                         
-                                        downloadButton("download_pdf_from_rnw",
-                                                       "Download PDF from Rnw"),
                                         br(), br(),
                                         downloadButton('download_pdf_from_rmd',
                                                        'Download PDF from Rmd'),
@@ -134,31 +132,7 @@ server <-
                                 title(main = 'This is the plot created by your code')
                         })
                 
-                # Render PDF from Rnw
-                output$download_pdf_from_rnw <-
-                        downloadHandler(filename = "report_rnw.pdf",
-                                        content = function(file){
-                                                src <- normalizePath('includes/report_rnw.Rnw')
-                                                owd <- setwd(tempdir())
-                                                on.exit(setwd(owd))
-                                                file.copy(src, 'report_rnw.Rnw')
-                                                
-                                                library(rmarkdown)
-                                                knit2pdf('report_rnw.Rnw')
-                                                
-                                                # copy pdf to 'file'
-                                                file.copy("report_rnw.pdf", file, overwrite = TRUE)
-                                                
-                                                # # delete generated files
-                                                file.remove("report_rnw.pdf", "report_rnw.tex",
-                                                            "report_rnw.aux", "report_rnw.log")
-                                                
-                                                # delete folder with plots
-                                                unlink("includes/figure", recursive = TRUE)
-                                        },
-                                        contentType = "application/pdf"
-                        )
-                
+  
                 # Render PDF from Rmd
                 output$download_pdf_from_rmd <- downloadHandler(
                         filename = function() {
