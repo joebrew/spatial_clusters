@@ -30,11 +30,11 @@ prepare_magude_data <- function(){
   ## REAL DATA
   # Read in bednets data
   if (Sys.info()["user"] == "Lucia") {
-    real_data <- '/Users/Lucia/Dropbox/MALTEM Entomology/8. Scientific Studies/3. VECE- Efficacy/4. sample_size_house_selection/House selection bednets/updated_db/households_list_reshaped_2016-04-24.csv'
+    # real_data <- '/Users/Lucia/Dropbox/MALTEM Entomology/8. Scientific Studies/3. VECE- Efficacy/4. sample_size_house_selection/House selection bednets/updated_db/households_list_reshaped_2016-04-24.csv'
     
     
   } else {
-    real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
+    # real_data <- '/media/joebrew/TOSHIBA/households_list_reshaped_2016-04-24.csv'
     
   }
   

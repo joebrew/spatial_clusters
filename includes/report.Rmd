@@ -13,5 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
-eval(parse(text = input$plot_code))
+# eval(parse(text = input$plot_code))
+output$point_plot
 ```
