@@ -41,7 +41,7 @@ cluster_optimize <- function(cluster_size = 10,
         # # Create column for simulations
         # locations_fresh$simulation_number <- time
         # Create column for indication of whether full sized cluster or not
-        locations_fresh$complete_cluster <- NA
+        locations_fresh$complete_cluster <- TRUE
         
         # Pick a start point
         # ONLY IF THERE ARE MORE THINGS TO BE SELECTED 
@@ -77,7 +77,7 @@ cluster_optimize <- function(cluster_size = 10,
                 # Remove that start point from the list of eligibles
                 locations_fresh$selected[locations_fresh$index == start_index] <- TRUE
                 # Assign the cluster to the start point
-                locations_fresh$cluster[locations_fresh$index == start_index] <- TRUE
+                locations_fresh$cluster[locations_fresh$index == start_index] <- cluster
                 
                 # Get the distance of all remaining points from the start_point
                 # all_distances <- spDistsN1(pts = locations, 
@@ -109,12 +109,16 @@ cluster_optimize <- function(cluster_size = 10,
                 locations_fresh$selected[nearest$index] <- TRUE
                 # Mark if it's a full size cluster or not
                 locations_fresh$complete_cluster[nearest$index] <- !incomplete_cluster
+                locations_fresh$complete_cluster[locations_fresh$index == start_index] <-
+                  !incomplete_cluster
                 
                 # Get the start_point for the next round 
                 # possibles <- spDists(x = locations_fresh[!locations_fresh$selected,],
                 #                      longlat = TRUE)
                 possibles <- distance_matrix[!locations_fresh$selected,
                                              !locations_fresh$selected]
+                # Ensure that it remains a matrix regardless of size
+                possibles <- as.matrix(possibles)
                 if(nrow(possibles) > 0){
                   if (rest=="far") {
                     start_index <- locations_fresh$index[!locations_fresh$selected][which.max(rowSums(possibles))][1]  
