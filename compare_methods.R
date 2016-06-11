@@ -14,7 +14,7 @@ source('cluster_optimize.R')
 source('cluster_evaluate.R')
 
 # How many iterations per strategy per country
-how_many <- 2
+how_many <- 300
 
 # How many times it has to be run
 countries <- as.character(sort(unique(africa_df$COUNTRY)))
@@ -92,7 +92,7 @@ for (country in countries){
   }
 }
 
-save.image('evaluation/results_', how_many, '_simulations.RData')
+save.image(paste0('evaluation/results_', how_many, '_simulations.RData'))
 
 # Add strategy to results
 results$strategy <- paste0(results$start, '-', results$rest)
@@ -107,7 +107,8 @@ results <-
 # Get everything grouped together
 z <- results %>%
   group_by(strategy) %>%
-  summarise(avg_performance = mean(performance)) %>%
+  summarise(avg_performance = mean(performance),
+            best_performance = min(performance)) %>%
   ungroup %>%
   arrange(avg_performance)
 
@@ -118,12 +119,14 @@ results$strategy <- factor(results$strategy, levels = z$strategy)
 # Get a breakdown of strategy by country
 by_country <- results %>%
   group_by(strategy, country) %>%
-  summarise(avg_performance = mean(performance)) %>%
+  summarise(avg_performance = mean(performance),
+            best_performance = min(performance)) %>%
   ungroup %>%
   arrange(avg_performance) %>%
   # get the average performance by country
   group_by(country) %>%
-  mutate(adj_performance = avg_performance / mean(avg_performance))
+  mutate(adj_performance = avg_performance / mean(avg_performance),
+         adj_best_performance = best_performance / mean(avg_performance))
 by_country$strategy <- factor(by_country$strategy, levels = z$strategy)
 
 
@@ -164,13 +167,27 @@ for (i in 1:length(countries)){
                filter(country == this_country),
              aes(x = strategy, y = adj_performance, group = 1),
              # stat = 'identity',
-             alpha = 0.5) +
+             alpha = 0.5,
+             col = 'red') +
+    geom_line(data = by_country %>%
+                filter(country == this_country),
+              aes(x = strategy, y = adj_best_performance, 
+                  group = 1),
+              color = 'blue',
+              # stat = 'identity',
+              alpha = 0.5) +
     geom_point(data = by_country %>%
                 filter(country == this_country),
               aes(x = strategy, y = adj_performance, group = 1),
               # stat = 'identity',
               alpha = 0.6, 
               col = 'red')
+  geom_point(data = by_country %>%
+               filter(country == this_country),
+             aes(x = strategy, y = adj_best_performance, group = 1),
+             # stat = 'identity',
+             alpha = 0.6, 
+             col = 'blue')
   print(g)
     
 }
