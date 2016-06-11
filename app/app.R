@@ -62,13 +62,12 @@ ui <-
                                  ),
                                  
                                  column(8,
-                                        h3('Please, have a look at your points'),
+                                        h3('Have a look at your points'),
                                         leafletOutput("interactive_map"),
-                                        includeMarkdown("includes/include.md"),
+                                        # includeMarkdown("includes/include.md"),
                                         # plotOutput('user_plot'),
                                         h3('Your data'),
                                         # dataTableOutput('user_table'),
-                                        p('This is a section written using shiny helpers.'),
                                         dataTableOutput("point_table")
                                        
                                  ))),
